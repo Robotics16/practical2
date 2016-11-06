@@ -21,10 +21,10 @@ interface.setMotorAngleControllerParameters(motors[1],motorParams)
 
 # Setup initial state of particles
 numberOfParticles = 100
-particles = [(300, 300, 0) for i in range(numberOfParticles)]
+particles = [((300, 300, 0), 1 / numberOfParticles) for i in range(numberOfParticles)]
 
 def drawParticles(particles):
-    print "drawParticles:" + str(particles)
+    print "drawParticles:" + str([x[0] for x in particles])
 
 
 def updateParticlesForward(particles):
@@ -34,15 +34,15 @@ def updateParticlesForward(particles):
     return particles
 
 
-def updateParticlesRotateRight(particles):
+def updateParticlesRotateLeft(particles):
     """Update all particles with 90 degrees rotation to the right"""
-    particles = map(updateOneParticleRotateRight, particles)
+    particles = map(updateOneParticleRotateLeft, particles)
     return particles
 
 def updateOneParticleForward(particle):
     """Update particle triple with 10cm forward motion,
     use gaussian distribution with mu=0 and estimated sigma"""
-    (old_x, old_y, old_theta) = particle
+    ((old_x, old_y, old_theta), weight) = particle
     d = 10 # forward motion 10 cms
 
     sigma_offset = 1   # estimated sigma 2cm2
@@ -52,24 +52,25 @@ def updateOneParticleForward(particle):
     e = random.gauss(mu, sigma_offset) # error term for coordinate offset
     f = random.gauss(mu, sigma_rotation) # error term for rotation
     
-    particle = (old_x + (d + e) * math.cos(old_theta),
-                old_y + (d + e) * math.sin(old_theta),
-                old_theta + f)
+    particle = ((old_x + (d + e) * math.cos(old_theta),
+                 old_y + (d + e) * math.sin(old_theta),
+                 old_theta + f),
+               weight)
     
     return particle
 
-def updateOneParticleRotateRight(particle):
+def updateOneParticleRotateLeft(particle):
     """Update particle triple with 10cm forward motion,
     use gaussian distribution with mu=0 and estimated sigma"""
-    (old_x, old_y, old_theta) = particle
+    ((old_x, old_y, old_theta), weight) = particle
     
     sigma_rotation = 0.2
     mu = 0
-    g =0 #random.gauss(mu, sigma_rotation) # error term for pure rotation
+    g = random.gauss(mu, sigma_rotation) # error term for pure rotation
     
     angle = -math.pi / 2
+    particle = ((old_x, old_y, old_theta + angle + g), weight)
     
-    particle = (old_x, old_y, old_theta + angle + g)
     return particle
 
 
@@ -81,7 +82,7 @@ for i in range(4):
         drawParticles(particles)
         time.sleep(0.25)
     #motor_util.rotateRight90deg(interface, motors)
-    particles = updateParticlesRotateRight(particles)
+    particles = updateParticlesRotateLeft(particles)
     drawParticles(particles)
     time.sleep(0.25)
 
