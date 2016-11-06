@@ -1,7 +1,7 @@
 import brickpi
 import time 
 
-rotate90Rad = 6.1
+rotate90Rad = 6.45
 
 def rotate(angle, interface, motors):
   interface.increaseMotorAngleReferences(motors,[-angle,angle])
