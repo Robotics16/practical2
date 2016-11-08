@@ -1,10 +1,13 @@
 import brickpi
-import time 
+import time
+import math
 
-rotate90Rad = 6.45
+rotate1deg = 6.46 / (math.pi/2)
+forward1cm = 14.6 / 40
 
 def rotate(angle, interface, motors):
-  interface.increaseMotorAngleReferences(motors,[-angle,angle])
+  motorRot = angle*rotate1deg
+  interface.increaseMotorAngleReferences(motors,[-motorRot,motorRot])
 
   while not interface.motorAngleReferencesReached(motors) :
           motorAngles = interface.getMotorAngles(motors)
@@ -26,35 +29,22 @@ def move(angle, interface, motors):
   print "Destination reached!"
 
 def set_pid(motorParams):
-	motorParams.maxRotationAcceleration = 6.0
-	motorParams.maxRotationSpeed = 12.0
-	motorParams.feedForwardGain = 255/20.0
-	motorParams.minPWM = 30.0
-	motorParams.pidParameters.minOutput = -255
-	motorParams.pidParameters.maxOutput = 255
-	motorParams.pidParameters.k_p = 600.0
-	motorParams.pidParameters.k_i = 1400
-	motorParams.pidParameters.k_d = 20.625
+        motorParams.maxRotationAcceleration = 6.0
+        motorParams.maxRotationSpeed = 12.0
+        motorParams.feedForwardGain = 255/20.0
+        motorParams.minPWM = 18 # 30.0
+        motorParams.pidParameters.minOutput = -255
+        motorParams.pidParameters.maxOutput = 255
+        motorParams.pidParameters.k_p = 390 #600.0 # 600
+        motorParams.pidParameters.k_i = 650 #1400   # 200
+        motorParams.pidParameters.k_d = 13 #20.625
 
 def rotateLeft90deg(interface, motors):
-	rotate(rotate90Rad, interface, motors)
+        rotate(math.pi/2, interface, motors)
 
 def rotateRight90deg(interface, motors):
-	rotate(-rotate90Rad, interface, motors)
+        rotate(-math.pi/2, interface, motors)
 
-def move40cm(interface, motors):
-	move(14.5, interface, motors)
-
-def move10cm(interface, motors):
-	move(3.625, interface, motors)
-
-def moveback40cm(interface, motors):
-	move(-14.5, interface, motors)
-
-def move5cm(interface, motors):
-	move(1.5, interface, motors)  # TODO FIX ANGLE VAL
-
-def moveback5cm(interface, motors):
-	move(-1.5, interface, motors)  # TODO FIX ANGLE VAL
-
+def forward(distance, interface, motors):
+        move(distance*forward1cm, interface, motors)
 

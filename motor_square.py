@@ -21,29 +21,35 @@ interface.setMotorAngleControllerParameters(motors[1],motorParams)
 
 # Setup initial state of particles
 numberOfParticles = 100
-particles = [((300, 300, 0), 1 / float(numberOfParticles)) for i in range(numberOfParticles)]
+startPos = 300
+particles = [((startPos, startPos, 0), 1 / float(numberOfParticles)) for i in range(numberOfParticles)]
 
 def drawParticles(particles):
     print "drawParticles:" + str([p[0] for p in particles])
 
-
-def updateParticlesForward(particles):
+def updateParticlesForward(particles, d):
     """Update all particles with 10cm forward motion, 
     based on current theta for each."""
-    particles = map(updateOneParticleForward, particles)
+	
+    for i in range(0, len(particles)):
+	updatedParticle = updateOneParticleForward(particles[i], d)
+	particles[i] = updatedParticle
+
     return particles
 
+def updateParticlesRotate(particles, angle):
+    """Update all particles with a certain angle"""
 
-def updateParticlesRotateLeft(particles):
-    """Update all particles with 90 degrees rotation to the right"""
-    particles = map(updateOneParticleRotateLeft, particles)
+    for i in range(0, len(particles)):
+    	updatedParticle = updateOneParticleRotate(particles[i], angle)
+    	particles[i] = updatedParticle
+
     return particles
 
-def updateOneParticleForward(particle):
+def updateOneParticleForward(particle, d):
     """Update particle triple with 10cm forward motion,
     use gaussian distribution with mu=0 and estimated sigma"""
     ((old_x, old_y, old_theta), w) = particle
-    d = 10 # forward motion 10 cms
 
     sigma_offset = 1   # estimated sigma 2cm2 TODO
     sigma_rotation = 0.2 # TODO
@@ -58,19 +64,18 @@ def updateOneParticleForward(particle):
     
     return particle
 
-def updateOneParticleRotateLeft(particle):
+def updateOneParticleRotate(particle, angle):
     """Update particle triple with 10cm forward motion,
     use gaussian distribution with mu=0 and estimated sigma"""
     ((old_x, old_y, old_theta), w) = particle
-    
-    sigma_rotation = 0.2 # TODO
+                
+    sigma_rotation = 0.2 # TODO 
     mu = 0
     g = random.gauss(mu, sigma_rotation) # error term for pure rotation
     
-    angle = -math.pi / 2
-    
     particle = ((old_x, old_y, old_theta + angle + g), w) # TODO keep angle between -pi and pi
-    return particle
+    return particle 
+
 
 def getCurrentLocation(particles):
     """Given all particles returns an estimate of the 
@@ -80,7 +85,6 @@ def getCurrentLocation(particles):
     y_estimate     = sum([e[1] for e in estimates])
     theta_estimate = sum([e[2] for e in estimates])
     
-    print "Current loc: " + str((x_estimate, y_estimate, theta_estimate)) # TODO remove
     return (x_estimate, y_estimate, theta_estimate)
 
 def navigateToWaypoint(w_x, w_y, particles):
@@ -94,31 +98,44 @@ def navigateToWaypoint(w_x, w_y, particles):
     # Turn on the spot in the direction of the waypoint
     alpha = math.atan2(d_y, d_x) # absolute orientation needed (using atan2 so that the result is between -pi and pi)
     beta  = (alpha - theta) # angle to turn
-    # TODO make sure that you always turn <180 degrees
-    # motor_util.rotateAngle(beta)
+    if (abs(beta) > math.pi) :
+    	if (beta > 0) :
+            beta = beta - 2 * math.pi
+        else :
+            beta = beta + 2 * math.pi
+       
+    motor_util.rotate(-beta, interface, motors)
+    particles = updateParticlesRotate(particles, beta)
     print "Waypoint navigate: Rotate: " + str(beta)
     
     # Move straight forward to waypoint
     distance_to_move = math.sqrt(d_x ** 2 + d_y ** 2) # distance to move using the Pythagorean theorem
     print "Waypoint navigate: go: " + str(distance_to_move)
-    # motor_util.moveForward(distance_to_move)
+    motor_util.forward(distance_to_move, interface, motors)
+    particles = updateParticlesForward(particles, distance_to_move)
+
+    (x, y, theta) = getCurrentLocation(particles)
+    print "Current loc: " + str((x-startPos, y-startPos, theta))
 
 
-# Go in squares
+"""# Go in squares
 for i in range(4):
     for j in range(4):
-        #motor_util.move10cm(interface, motors)
+        motor_util.forward(10, interface, motors)
         particles = updateParticlesForward(particles)
         getCurrentLocation(particles)
         drawParticles(particles)
         time.sleep(0.25)
-    #motor_util.rotateRight90deg(interface, motors)
+    motor_util.rotateRight90deg(interface, motors)
     particles = updateParticlesRotateLeft(particles)
     getCurrentLocation(particles)
     drawParticles(particles)
-    time.sleep(0.25)
-    
-navigateToWaypoint(0, 0, particles) # TODO move this to its place
+    time.sleep(0.25)"""
+
+while(True):
+	w_x = float(input("Enter your desired Wx position: "))
+	w_y = float(input("Enter your desired Wy position: "))
+	navigateToWaypoint(w_x+startPos, w_y+startPos, particles) 
 
 print "Destination reached!"
 
