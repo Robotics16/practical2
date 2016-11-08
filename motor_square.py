@@ -35,8 +35,8 @@ def updateOneParticleForward(particle, d):
     use gaussian distribution with mu = 0 and estimated sigma"""
     ((old_x, old_y, old_theta), w) = particle
 
-    sigma_offset   = 0.2     # estimated sigma for 10 cms (scaled with variance for longer distances) TODO
-    sigma_rotation = 0.2     # TODO
+    sigma_offset   = 0.05   # estimated sigma for 10 cms (scaled with variance for longer distances) TODO
+    sigma_rotation = 0.05
     mu = 0
 
     e = random.gauss(mu, math.sqrt((sigma_offset ** 2) * d / 10)) # error term for coordinate offset
@@ -54,8 +54,10 @@ def updateOneParticleRotate(particle, angle):
     use gaussian distribution with mu=0 and estimated sigma"""
     ((old_x, old_y, old_theta), w) = particle
                 
-    sigma_rotation = 0.2 # TODO 
+    sigma_rotation_90 = 0.1 # estimated sigma for 90 degrees
     mu = 0
+    
+    sigma_rotation = math.sqrt((sigma_rotation_90 ** 2) * abs(angle) / (math.pi / 2.0)) # scaled sigma based on the estimation and the actual angle
     g = random.gauss(mu, sigma_rotation) # error term for pure rotation
     
     particle = ((old_x, old_y, old_theta + angle + g), w) # TODO keep angle between -pi and pi
@@ -72,7 +74,7 @@ def getCurrentLocation(particles):
     
     return (x_estimate, y_estimate, theta_estimate)
 
-def navigateToWaypoint(w_x, w_y, particles):
+def navigateToWaypoint(w_x, w_y, particles, interface, motors):
     """Using the current location returned by getCurrentLocation()
     navigates the robot to (w_x, w_y) (coordinates in the Wold coordinate system)"""  
     (x, y, theta) = getCurrentLocation(particles)
@@ -122,28 +124,20 @@ def main():
     numberOfParticles = 100
     particles = [((startPos, startPos, 0), 1 / float(numberOfParticles)) for i in range(numberOfParticles)]
     
-    #Go in squares
+    # Go in squares
 
     for i in range(4):
         for j in range(4):
-            #motor_util.forward(10, interface, motors)
+            motor_util.forward(10, interface, motors)
             drawParticles(particles)
             time.sleep(0.25)
             particles = updateParticlesForward(particles, 20)
             drawParticles(particles)
             time.sleep(0.25)
-        #motor_util.rotateRight90deg(interface, motors)
+        motor_util.rotateRight90deg(interface, motors)
         particles = updateParticlesRotate(particles, -math.pi/2)
         drawParticles(particles)
         time.sleep(0.25)
-
-    # Waypoint navigation:
-    #while(True):
-    #drawParticles(particles)
-    #w_x = float(input("Enter your desired Wx position: "))
-    #w_y = float(input("Enter your desired Wy position: "))
-    #navigateToWaypoint(w_x + startPos, w_y + startPos, particles)
-    #drawParticles(particles)
 
     print "Destination reached!"
 
